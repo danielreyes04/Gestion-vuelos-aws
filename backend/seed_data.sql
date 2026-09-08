@@ -45,7 +45,7 @@ INSERT INTO agencia (agencia_id, nombre, contacto, tasa_comision) VALUES
 -- =============================================================
 -- 5. RUTAS
 -- =============================================================
-INSERT INTO ruta (ruta_id, aeropuerto_origen_id, aeropuerto_destino_id, distancia_km) VALUES
+INSERT INTO ruta (ruta_id, aeropuerto_origen, aeropuerto_destino, distancia_km) VALUES
   ('e1000000-0000-0000-0000-000000000001',
    'a1000000-0000-0000-0000-000000000001',
    'a1000000-0000-0000-0000-000000000002',

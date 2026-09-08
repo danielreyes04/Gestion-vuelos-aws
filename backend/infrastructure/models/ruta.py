@@ -14,11 +14,13 @@ class RutaModel(Base):
         UUID(as_uuid=True),
         ForeignKey("aeropuerto.aeropuerto_id"),
         nullable=False,
+        name="aeropuerto_origen",   # nombre real en Aurora
     )
     aeropuerto_destino_id = Column(
         UUID(as_uuid=True),
         ForeignKey("aeropuerto.aeropuerto_id"),
         nullable=False,
+        name="aeropuerto_destino",  # nombre real en Aurora
     )
     distancia_km = Column(Numeric(10, 2), nullable=True)
 
