@@ -29,7 +29,6 @@ class ReservaModel(Base):
     pasajero = relationship("PasajeroModel", back_populates="reservas")
     gestionada_por = relationship("UsuarioModel", foreign_keys=[gestionada_por_usuario])
     vuelos = relationship("ReservaVueloModel", back_populates="reserva")
-    asientos = relationship("ReservaAsientoModel", back_populates="reserva")
     pago = relationship("PagoModel", back_populates="reserva", uselist=False)
     agencia_info = relationship("ReservaAgenciaModel", back_populates="reserva", uselist=False)
     auditorias = relationship("AuditoriaModel", back_populates="reserva")
