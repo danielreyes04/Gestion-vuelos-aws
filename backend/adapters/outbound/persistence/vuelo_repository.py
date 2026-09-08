@@ -11,7 +11,6 @@ from adapters.outbound.persistence.mappers import (
 from app.domain.entities.asiento import Asiento
 from app.domain.entities.vuelo_instancia import VueloInstancia
 from app.domain.ports.outbound.vuelo_repository_port import VueloRepositoryPort
-from infrastructure.models.aeropuerto import AeropuertoModel
 from infrastructure.models.asiento import AsientoModel
 from infrastructure.models.ruta import RutaModel
 from infrastructure.models.vuelo_instancia import VueloInstanciaModel
@@ -44,21 +43,13 @@ class VueloRepository(VueloRepositoryPort):
         Respuesta esperada < 2 s (RNF-001) gracias a los índices en
         aeropuerto.codigo y vuelo_instancia.fecha_salida.
         """
-        origen = self._db.query(AeropuertoModel).filter(
-            AeropuertoModel.codigo == aeropuerto_origen_codigo
-        ).first()
-        destino = self._db.query(AeropuertoModel).filter(
-            AeropuertoModel.codigo == aeropuerto_destino_codigo
-        ).first()
-
-        if not origen or not destino:
-            return []
-
         inicio_dia = datetime(fecha.year, fecha.month, fecha.day, 0, 0, 0,
                               tzinfo=timezone.utc)
         fin_dia = datetime(fecha.year, fecha.month, fecha.day, 23, 59, 59,
                            tzinfo=timezone.utc)
 
+        # En Aurora, ruta.aeropuerto_origen y ruta.aeropuerto_destino son
+        # varchar con códigos IATA — filtro directo sin resolver UUID.
         instancias = (
             self._db.query(VueloInstanciaModel)
             .join(VueloProgramadoModel,
@@ -67,8 +58,8 @@ class VueloRepository(VueloRepositoryPort):
             .join(RutaModel,
                   VueloProgramadoModel.ruta_id == RutaModel.ruta_id)
             .filter(
-                RutaModel.aeropuerto_origen_id == origen.aeropuerto_id,
-                RutaModel.aeropuerto_destino_id == destino.aeropuerto_id,
+                RutaModel.aeropuerto_origen == aeropuerto_origen_codigo,
+                RutaModel.aeropuerto_destino == aeropuerto_destino_codigo,
                 VueloInstanciaModel.fecha_salida >= inicio_dia,
                 VueloInstanciaModel.fecha_salida <= fin_dia,
                 VueloInstanciaModel.asientos_disponibles >= num_pasajeros,
