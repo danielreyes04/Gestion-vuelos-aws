@@ -3,10 +3,10 @@ from datetime import datetime
 from uuid import UUID
 
 
-# Roles válidos del sistema
-ROL_PASAJERO = "passenger"
+# Roles válidos del sistema (deben coincidir con el check constraint de Aurora)
+ROL_PASAJERO = "cliente"
 ROL_ADMIN = "admin"
-ROL_AGENTE = "agency_agent"
+ROL_AGENTE = "agencia"
 
 ROLES_VALIDOS = {ROL_PASAJERO, ROL_ADMIN, ROL_AGENTE}
 
