@@ -8,8 +8,12 @@ from infrastructure.config import settings
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    # K=150 requests simultáneos (R2) — pool debe aguantar la carga.
+    # pool_size=50 conexiones base + max_overflow=120 = 170 conexiones máx.
+    # Aurora db.t3.micro soporta ~85 conexiones; si hay problemas bajar a 30+60.
+    pool_size=50,
+    max_overflow=120,
+    pool_timeout=30,
     echo=(settings.APP_ENV == "development"),
 )
 
