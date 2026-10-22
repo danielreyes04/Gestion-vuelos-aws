@@ -5,9 +5,9 @@ seed: 764000
 # Actualizar la IP después de cada despliegue / reinicio del Learner Lab
 # (python deploy/deploy_ec2.py imprime estas dos líneas).
 backend:
-  base_url: "http://3.239.196.92:8000"
+  base_url: "http://44.202.201.58:8000"
 frontend:
-  base_url: "http://3.239.196.92:8000"   # el mismo FastAPI sirve "/" y "/manager"
+  base_url: "http://44.202.201.58:8000"   # el mismo FastAPI sirve "/" y "/manager"
 
 aws:
   region: us-east-1
