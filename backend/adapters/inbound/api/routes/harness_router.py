@@ -11,13 +11,13 @@ Rutas:
   GET  /health                      → ya existe en main.py
 """
 import uuid
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import text, update
 from sqlalchemy.orm import Session
 
+from adapters.inbound.api.routes.analytics_router import router as analytics_router
 from infrastructure.database import get_db
 from infrastructure.models.flight import FlightModel
 from infrastructure.models.reservation import ReservationModel
@@ -225,17 +225,6 @@ def get_reservation(reservation_id: str, db: Session = Depends(get_db)):
 # ------------------------------------------------------------------ #
 # GET /analytics/occupancy?route=&month=                              #
 # R7: lee de Athena, responde en < 10 s.                             #
-# Implementación completa en la Fase 2 (después de EMR + Glue).      #
-# Por ahora retorna 404 para que el harness no explote.              #
+# Definido e implementado en analytics_router.                       #
 # ------------------------------------------------------------------ #
-
-@router.get(
-    "/analytics/occupancy",
-    status_code=status.HTTP_200_OK,
-)
-def get_occupancy(route: str, month: str):
-    # TODO Fase 2: implementar con boto3 + Athena
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Analytics not yet available. Pending EMR job.",
-    )
+router.include_router(analytics_router)

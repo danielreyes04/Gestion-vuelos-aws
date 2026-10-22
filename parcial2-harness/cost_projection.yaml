@@ -1,0 +1,16 @@
+# Proyección de costo mensual (us-east-1, on-demand, recursos 24/7). Sin total: el harness lo calcula.
+assumptions: >
+  ~50 usuarios gerenciales/clientes, ~5.000 requests/dia al backend y ~200 consultas/mes a Athena
+  (una por cada vista del panel, sin cache). Datos medidos en S3: 2 M reservas (CSV crudo ~209 MB +
+  Parquet curado ~23 MB, ~0,23 GB en total). Un job EMR al mes (3 x m4.large, ~1 h = 12 horas
+  normalizadas de instancia). Un solo EC2 t3.small con backend y frontend, RDS db.t4g.micro
+  single-AZ, sin NAT ni balanceador de carga. Los importes de S3 y Athena estan redondeados hacia
+  arriba (colchon). Si el volumen de datos o de consultas se multiplica por 10: S3 y Athena siguen
+  siendo centavos o pocos dolares por el formato Parquet y la particion por mes; el costo lo
+  dominan RDS y EC2, que no dependen del volumen de analitica.
+line_items:
+  - {service: "RDS",    detail: "db.t4g.micro, single AZ, PostgreSQL (transaccional)",            monthly_usd: 11.68}
+  - {service: "EC2",    detail: "1 x t3.small Ubuntu 24.04, backend FastAPI + frontend",          monthly_usd: 15.18}
+  - {service: "S3",     detail: "~0.25 GB (CSV crudo + Parquet curado + resultados de Athena)",   monthly_usd: 0.50}
+  - {service: "Athena", detail: "~200 consultas/mes, 10 MB minimo facturado c/u (lee ~1 MB de una particion)", monthly_usd: 0.10}
+  - {service: "EMR",    detail: "1 run/mes, 3 x m4.large, ~1 h (12 horas normalizadas)",          monthly_usd: 0.36}

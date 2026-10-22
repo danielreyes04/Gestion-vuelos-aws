@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Aerolínea Regional | Panel gerencial</title>
+  <style>
+    :root {
+      --bg: #f3f5f9; --surface: #ffffff; --surface-2: #f7f9fc; --text: #0f172a; --muted: #5b6b82; --border: #e2e8f0;
+      --primary: #0b6fc2; --primary-hover: #095a9f; --primary-ink: #ffffff; --primary-soft: #e6f2fc;
+      --ok: #047857; --ok-soft: #e6f6ef; --warn: #b45309; --warn-soft: #fef3e2; --danger: #b91c1c; --danger-soft: #fdecec;
+      --shadow: 0 1px 2px rgba(15,23,42,.06), 0 10px 28px -14px rgba(15,23,42,.22);
+      --radius: 14px;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220; --surface: #121b2f; --surface-2: #0f1728; --text: #e8eef8; --muted: #9aa9c0; --border: #25324d;
+        --primary: #4aa3f0; --primary-hover: #6bb4f3; --primary-ink: #0b1220; --primary-soft: #12263f;
+        --ok: #4ade9d; --ok-soft: #10261e; --warn: #fbbf6a; --warn-soft: #2b2010; --danger: #ff8a8a; --danger-soft: #2d1416;
+        --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.65);
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    header { background: #0f1b33; color: #fff; }
+    .bar { max-width: 960px; margin: 0 auto; padding: .9rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; letter-spacing: -.01em; font-size: 1.05rem; }
+    .brand svg { color: #7fb0ff; }
+    .nav a { color: #c5d3ea; text-decoration: none; font-weight: 500; font-size: .92rem; padding: .45rem .85rem; border-radius: 8px; }
+    .nav a:hover, .nav a:focus-visible { color: #fff; background: rgba(255,255,255,.12); outline: none; }
+    main { flex: 1; width: 100%; max-width: 960px; margin: 0 auto; padding: 1.6rem 1rem 3rem; }
+    h1 { font-size: 1.7rem; letter-spacing: -.02em; line-height: 1.2; }
+    .lead { color: var(--muted); margin: .35rem 0 1.2rem; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.4rem; box-shadow: var(--shadow); margin-bottom: 1.2rem; }
+    .card h2 { font-size: 1.1rem; margin-bottom: 1rem; letter-spacing: -.01em; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: .8rem; align-items: end; }
+    .field { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+    label { font-size: .82rem; font-weight: 600; color: var(--muted); }
+    input { width: 100%; height: 2.9rem; padding: 0 .85rem; border: 1.5px solid var(--border); border-radius: 10px; font: inherit; color: var(--text); background: var(--surface-2); }
+    input:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 35%, transparent); border-color: var(--primary); }
+    input.upper { text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+    .hint { font-size: .78rem; color: var(--muted); margin-top: .8rem; }
+
+    .btn { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: .72rem 1.3rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .55rem; }
+    .btn-primary { background: var(--primary); color: var(--primary-ink); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 40%, transparent); outline-offset: 2px; }
+    .btn:disabled { opacity: .65; cursor: progress; }
+    .spinner { width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } .fill { transition: none !important; } }
+
+    .alert { margin-top: 1rem; padding: .75rem 1rem; border-radius: 10px; font-size: .92rem; border: 1px solid; }
+    .alert.error { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+
+    #metrics-section { margin-top: 1.4rem; }
+    .metrics-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: .8rem; }
+    .metrics-head h3 { font-size: 1.05rem; }
+    .metrics-head span { color: var(--muted); font-size: .88rem; }
+    .hero { padding: 1.4rem; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface-2); }
+    .hero .label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .hero-row { display: flex; align-items: baseline; gap: .9rem; flex-wrap: wrap; margin: .2rem 0 .8rem; }
+    /* occupancy-value: lo lee el arnés (R9). Texto con %, sin animaciones sobre el número. */
+    .occupancy-number { font-size: 3rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .level { padding: .22rem .7rem; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+    .level.high { background: var(--ok-soft); color: var(--ok); }
+    .level.mid { background: var(--warn-soft); color: var(--warn); }
+    .level.low { background: var(--danger-soft); color: var(--danger); }
+    .gauge { height: 12px; border-radius: 999px; background: var(--border); overflow: hidden; }
+    .fill { height: 100%; width: 0; border-radius: 999px; background: var(--primary); transition: width .5s ease; }
+    .fill.high { background: var(--ok); } .fill.mid { background: var(--warn); } .fill.low { background: var(--danger); }
+    .scale { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin-top: .3rem; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .9rem; margin-top: .9rem; }
+    .stat { padding: 1rem 1.1rem; border: 1.5px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+    .stat .label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .stat .num { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    .recent h2 { margin-bottom: .7rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .chip { font: inherit; font-size: .86rem; font-weight: 600; cursor: pointer; padding: .4rem .8rem; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); }
+    .chip:hover { border-color: var(--primary); }
+    .chip:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 40%, transparent); }
+    .chip small { color: var(--muted); font-weight: 500; margin-left: .35rem; }
+
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+      .occupancy-number { font-size: 2.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="bar">
+      <div class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>
+        Aerolínea Regional
+      </div>
+      <nav class="nav" aria-label="Principal"><a href="/">&larr; Portal de clientes</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <h1>Panel gerencial</h1>
+    <p class="lead">¿Qué rutas llenan sus aviones? Consulta la ocupación de una ruta en un mes.</p>
+
+    <section class="card" aria-labelledby="query-title">
+      <h2 id="query-title">Ocupación por ruta y mes</h2>
+
+      <form id="manager-form" novalidate>
+        <div class="grid">
+          <div class="field">
+            <label for="manager-route">Ruta (origen-destino)</label>
+            <input class="upper" type="text" id="manager-route" data-testid="manager-route" placeholder="BOG-MDE" required autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="manager-month">Mes (AAAA-MM)</label>
+            <input type="text" id="manager-month" data-testid="manager-month" placeholder="2023-05" required inputmode="numeric" autocomplete="off" maxlength="7">
+          </div>
+          <button type="submit" id="manager-load" data-testid="manager-load" class="btn btn-primary">Consultar ocupación</button>
+        </div>
+      </form>
+      <p class="hint">Cada consulta ejecuta una query en Amazon Athena sobre <strong>route_month_metrics</strong>; puede tardar un par de segundos.</p>
+
+      <div id="manager-status" role="alert" hidden></div>
+
+      <div id="metrics-section" hidden>
+        <div class="metrics-head">
+          <h3 id="metrics-header"></h3>
+          <span id="metrics-month"></span>
+        </div>
+
+        <div class="hero">
+          <div class="label">Tasa de ocupación</div>
+          <div class="hero-row">
+            <div class="occupancy-number" data-testid="occupancy-value" id="occupancy-value"></div>
+            <span class="level" id="level"></span>
+          </div>
+          <div class="gauge" role="img" id="gauge" aria-label="Ocupación"><div class="fill" id="fill"></div></div>
+          <div class="scale" aria-hidden="true"><span>0 %</span><span>50 %</span><span>100 %</span></div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="label">Asientos vendidos</div><div class="num" id="seats-sold-value">0</div></div>
+          <div class="stat"><div class="label">Capacidad total</div><div class="num" id="seats-capacity-value">0</div></div>
+          <div class="stat"><div class="label">Asientos libres</div><div class="num" id="seats-free-value">0</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card recent" id="recent-card" hidden aria-labelledby="recent-title">
+      <h2 id="recent-title">Consultas recientes</h2>
+      <div class="chips" id="chips"></div>
+    </section>
+  </main>
+
+  <script>
+    const backendUrl = window.BACKEND_URL || (window.location.port === "3000" ? `${window.location.protocol}//${window.location.hostname}:8000` : "");
+    const RECENT_KEY = "vuelos.recent";
+    const $ = (id) => document.getElementById(id);
+    let busy = false;
+
+    function loadRecent() {
+      try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch (e) { return []; }
+    }
+    function saveRecent(list) {
+      try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch (e) { /* sin almacenamiento */ }
+    }
+
+    function renderRecent(list) {
+      const chips = $("chips");
+      chips.replaceChildren();
+      list.forEach((q) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "chip";
+        b.append(`${q.route} · ${q.month}`);
+        const s = document.createElement("small");
+        s.textContent = q.pct;
+        b.append(s);
+        b.addEventListener("click", () => {
+          $("manager-route").value = q.route;
+          $("manager-month").value = q.month;
+          loadOccupancy();
+        });
+        chips.append(b);
+      });
+      $("recent-card").hidden = list.length === 0;
+    }
+
+    function remember(route, month, pct) {
+      const list = loadRecent().filter((q) => !(q.route === route && q.month === month));
+      list.unshift({ route, month, pct });
+      const trimmed = list.slice(0, 6);
+      saveRecent(trimmed);
+      renderRecent(trimmed);
+    }
+
+    function monthName(ym) {
+      const [y, m] = ym.split("-").map(Number);
+      const text = new Intl.DateTimeFormat("es-CO", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1));
+      return text.charAt(0).toUpperCase() + text.slice(1);   // "Enero de 2023"
+    }
+
+    function fail(msg) {
+      const box = $("manager-status");
+      box.className = "alert error";
+      box.textContent = msg;
+      box.hidden = false;
+    }
+
+    async function loadOccupancy() {
+      if (busy) return;
+      const route = $("manager-route").value.trim().toUpperCase();
+      const month = $("manager-month").value.trim();
+      const box = $("manager-status");
+      box.hidden = true; box.textContent = "";
+      // Se oculta y se vacía el resultado anterior para que nunca se lea un valor viejo.
+      $("metrics-section").hidden = true;
+      $("occupancy-value").textContent = "";
+
+      if (!route) return fail("Escribe la ruta, por ejemplo BOG-MDE.");
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return fail("El mes debe tener el formato AAAA-MM, por ejemplo 2023-05.");
+
+      const btn = $("manager-load");
+      busy = true;
+      btn.dataset.html = btn.innerHTML;
+      btn.disabled = true; btn.setAttribute("aria-busy", "true");
+      btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Consultando…';
+      try {
+        const resp = await fetch(`${backendUrl}/analytics/occupancy?route=${encodeURIComponent(route)}&month=${encodeURIComponent(month)}`);
+        if (resp.status === 404) throw new Error(`No hay métricas para la ruta ${route} en ${month}. Revisa la ruta y el mes.`);
+        if (!resp.ok) throw new Error(`La consulta a Athena falló o tardó demasiado (error ${resp.status}). Inténtalo de nuevo.`);
+        const data = await resp.json();
+
+        const pct = data.occupancy * 100;
+        const level = pct >= 75 ? "high" : pct >= 50 ? "mid" : "low";
+        const levelText = { high: "Ocupación alta", mid: "Ocupación media", low: "Ocupación baja" }[level];
+        const text = pct.toFixed(2) + "%";   // p. ej. 82.80%: el arnés exige un porcentaje con decimales
+
+        $("metrics-header").textContent = `Ruta ${data.route}`;
+        $("metrics-month").textContent = monthName(data.month);
+        $("seats-sold-value").textContent = Number(data.seats_sold).toLocaleString("es-CO");
+        $("seats-capacity-value").textContent = Number(data.seats_capacity).toLocaleString("es-CO");
+        $("seats-free-value").textContent = Math.max(0, data.seats_capacity - data.seats_sold).toLocaleString("es-CO");
+        $("level").textContent = levelText;
+        $("level").className = "level " + level;
+        $("gauge").setAttribute("aria-label", `Ocupación ${text}`);
+        $("fill").className = "fill " + level;
+        $("fill").style.width = "0";
+        $("occupancy-value").textContent = text;
+        $("metrics-section").hidden = false;
+        requestAnimationFrame(() => { $("fill").style.width = Math.min(100, Math.max(0, pct)) + "%"; });
+
+        remember(data.route, data.month, text);
+      } catch (err) {
+        fail(err instanceof TypeError ? "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo." : err.message);
+      } finally {
+        busy = false;
+        btn.disabled = false; btn.removeAttribute("aria-busy");
+        btn.innerHTML = btn.dataset.html;
+      }
+    }
+
+    $("manager-form").addEventListener("submit", (e) => { e.preventDefault(); loadOccupancy(); });
+    renderRecent(loadRecent());
+  </script>
+</body>
+</html>

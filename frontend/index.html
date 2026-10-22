@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Aerolínea Regional | Reservas</title>
+  <style>
+    :root {
+      --bg: #f3f5f9; --surface: #ffffff; --surface-2: #f7f9fc; --text: #0f172a; --muted: #5b6b82; --border: #e2e8f0;
+      --primary: #2563eb; --primary-hover: #1d4ed8; --primary-ink: #ffffff; --primary-soft: #e8f0fe;
+      --ok: #047857; --ok-soft: #e6f6ef; --warn: #b45309; --warn-soft: #fef3e2; --danger: #b91c1c; --danger-soft: #fdecec;
+      --shadow: 0 1px 2px rgba(15,23,42,.06), 0 10px 28px -14px rgba(15,23,42,.22);
+      --radius: 14px;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220; --surface: #121b2f; --surface-2: #0f1728; --text: #e8eef8; --muted: #9aa9c0; --border: #25324d;
+        --primary: #4f8cff; --primary-hover: #6aa0ff; --primary-ink: #0b1220; --primary-soft: #16264a;
+        --ok: #4ade9d; --ok-soft: #10261e; --warn: #fbbf6a; --warn-soft: #2b2010; --danger: #ff8a8a; --danger-soft: #2d1416;
+        --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.65);
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    header { background: #0f1b33; color: #fff; }
+    .bar { max-width: 960px; margin: 0 auto; padding: .9rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; letter-spacing: -.01em; font-size: 1.05rem; }
+    .brand svg { color: #7fb0ff; }
+    .nav a { color: #c5d3ea; text-decoration: none; font-weight: 500; font-size: .92rem; padding: .45rem .85rem; border-radius: 8px; }
+    .nav a:hover, .nav a:focus-visible { color: #fff; background: rgba(255,255,255,.12); outline: none; }
+    main { flex: 1; width: 100%; max-width: 960px; margin: 0 auto; padding: 1.6rem 1rem 3rem; }
+    h1 { font-size: 1.7rem; letter-spacing: -.02em; line-height: 1.2; }
+    .lead { color: var(--muted); margin: .35rem 0 1.2rem; }
+
+    .stepper { list-style: none; display: flex; gap: .5rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+    .step { display: flex; align-items: center; gap: .5rem; color: var(--muted); font-size: .9rem; font-weight: 500; }
+    .step .dot { width: 1.7rem; height: 1.7rem; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; font-weight: 700;
+                 background: var(--surface); border: 1.5px solid var(--border); }
+    .step + .step::before { content: ""; width: 1.6rem; height: 2px; background: var(--border); margin-right: .1rem; }
+    .step.current { color: var(--text); }
+    .step.current .dot { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+    .step.done .dot { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.4rem; box-shadow: var(--shadow); margin-bottom: 1.2rem; }
+    .card h2 { font-size: 1.1rem; margin-bottom: 1rem; letter-spacing: -.01em; }
+    .grid { display: grid; grid-template-columns: 1fr auto 1fr 1.2fr; gap: .8rem; align-items: end; }
+    .field { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+    label { font-size: .82rem; font-weight: 600; color: var(--muted); }
+    input { width: 100%; height: 2.9rem; padding: 0 .85rem; border: 1.5px solid var(--border); border-radius: 10px; font: inherit; color: var(--text); background: var(--surface-2); }
+    input:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 35%, transparent); border-color: var(--primary); }
+    input.iata { text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+    .hint { font-size: .78rem; color: var(--muted); }
+
+    .btn { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: .72rem 1.3rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .55rem; }
+    .btn-primary { background: var(--primary); color: var(--primary-ink); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+    .btn-ghost:hover { background: var(--surface-2); }
+    .btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 40%, transparent); outline-offset: 2px; }
+    .btn:disabled { opacity: .65; cursor: progress; }
+    .btn-sm { padding: .5rem .95rem; font-size: .88rem; }
+    .swap { width: 2.6rem; height: 2.6rem; padding: 0; margin-bottom: 0; }
+    .spinner { width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } * { scroll-behavior: auto !important; } }
+
+    .alert { margin-top: 1rem; padding: .75rem 1rem; border-radius: 10px; font-size: .92rem; border: 1px solid; }
+    .alert.error { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+    .alert.info { background: var(--primary-soft); color: var(--text); border-color: color-mix(in srgb, var(--primary) 35%, transparent); }
+
+    .results-head { display: flex; justify-content: space-between; align-items: baseline; margin: 1.3rem 0 .6rem; }
+    .results-head h3 { font-size: 1rem; }
+    .flights { display: flex; flex-direction: column; gap: .7rem; }
+    .flight { display: grid; grid-template-columns: 1fr auto auto; gap: 1rem; align-items: center; padding: 1rem 1.15rem;
+              border: 1.5px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+    .flight:hover { border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); }
+    .flight.selected { border-color: var(--primary); background: var(--primary-soft); }
+    .route { display: flex; align-items: center; gap: .55rem; font-size: 1.3rem; font-weight: 700; letter-spacing: .02em; }
+    .route .to { color: var(--muted); font-weight: 500; }
+    .sub { font-size: .85rem; color: var(--muted); margin-top: .15rem; }
+    .badge { display: inline-block; justify-self: start; padding: .22rem .65rem; border-radius: 999px; font-size: .78rem; font-weight: 600; }
+    .badge.ok { background: var(--ok-soft); color: var(--ok); }
+    .badge.warn { background: var(--warn-soft); color: var(--warn); }
+    .badge.out { background: var(--danger-soft); color: var(--danger); }
+    .buy { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: .45rem; }
+    .price { font-size: 1.3rem; font-weight: 700; }
+    .price small { font-size: .75rem; font-weight: 500; color: var(--muted); }
+
+    .panel { margin-top: 1.2rem; padding: 1.2rem; border-radius: 12px; border: 1.5px solid color-mix(in srgb, var(--primary) 45%, var(--border)); background: var(--primary-soft); }
+    .panel h3 { font-size: 1.02rem; margin-bottom: .3rem; }
+    .panel .summary { color: var(--muted); font-size: .9rem; margin-bottom: .9rem; }
+    .panel .row { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .9rem; }
+
+    .confirm { margin-top: 1.2rem; text-align: center; padding: 1.6rem 1rem; border-radius: 12px; border: 1.5px solid color-mix(in srgb, var(--ok) 45%, var(--border)); background: var(--ok-soft); }
+    .confirm .tick { width: 3rem; height: 3rem; border-radius: 50%; background: var(--ok); color: var(--surface); display: grid; place-items: center; margin: 0 auto .6rem; font-size: 1.5rem; font-weight: 700; }
+    .confirm h3 { font-size: 1.15rem; }
+    .confirm p { color: var(--muted); font-size: .9rem; }
+    .res-code { display: inline-block; margin: .8rem 0 .3rem; padding: .7rem 1.1rem; border: 1.5px dashed var(--ok); border-radius: 10px; background: var(--surface);
+                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.05rem; font-weight: 700; color: var(--ok); word-break: break-all; user-select: all; }
+    .confirm .row { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin-top: .9rem; }
+
+    dl.details { display: grid; grid-template-columns: auto 1fr; gap: .35rem 1rem; margin-top: .9rem; font-size: .92rem; }
+    dl.details dt { color: var(--muted); }
+    dl.details dd { font-weight: 600; word-break: break-word; }
+    .inline { display: flex; gap: .7rem; align-items: end; flex-wrap: wrap; }
+    .inline .field { flex: 1 1 260px; }
+
+    @media (max-width: 480px) {
+      .stepper { gap: .9rem; }
+      .step + .step::before { display: none; }
+    }
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .swap { display: none; }
+      .grid .field:last-child { grid-column: 1 / -1; }
+      .flight { grid-template-columns: 1fr; }
+      .buy { align-items: stretch; text-align: left; flex-direction: row; justify-content: space-between; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="bar">
+      <div class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>
+        Aerolínea Regional
+      </div>
+      <nav class="nav" aria-label="Principal"><a href="/manager">Panel gerencial &rarr;</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <h1>Reserva tu vuelo</h1>
+    <p class="lead">Busca por ruta y fecha, elige tu vuelo y recibe tu código de confirmación al instante.</p>
+
+    <ol class="stepper" aria-label="Progreso de la reserva">
+      <li class="step current" id="step-1"><span class="dot">1</span>Buscar</li>
+      <li class="step" id="step-2"><span class="dot">2</span>Pasajero</li>
+      <li class="step" id="step-3"><span class="dot">3</span>Confirmación</li>
+    </ol>
+
+    <section class="card" aria-labelledby="search-title">
+      <h2 id="search-title">Búsqueda de vuelos</h2>
+
+      <form id="search-form" novalidate>
+        <div class="grid">
+          <div class="field">
+            <label for="search-origin">Origen (IATA)</label>
+            <input class="iata" type="text" id="search-origin" data-testid="search-origin" placeholder="BOG" required maxlength="3" autocomplete="off" pattern="[A-Za-z]{3}">
+          </div>
+          <button type="button" id="swap" class="btn btn-ghost swap" aria-label="Intercambiar origen y destino" title="Intercambiar">&#8646;</button>
+          <div class="field">
+            <label for="search-destination">Destino (IATA)</label>
+            <input class="iata" type="text" id="search-destination" data-testid="search-destination" placeholder="MDE" required maxlength="3" autocomplete="off" pattern="[A-Za-z]{3}">
+          </div>
+          <div class="field">
+            <label for="search-date">Fecha del vuelo</label>
+            <input type="date" id="search-date" data-testid="search-date" required>
+          </div>
+        </div>
+        <div style="margin-top:1.1rem">
+          <button type="submit" id="search-submit" data-testid="search-submit" class="btn btn-primary">Buscar vuelos</button>
+        </div>
+      </form>
+
+      <div id="search-status" role="status" aria-live="polite" hidden></div>
+
+      <div id="results" hidden>
+        <div class="results-head"><h3 id="results-title"></h3></div>
+        <div id="flights-container" class="flights"></div>
+      </div>
+
+      <div id="reservation-section" class="panel" hidden>
+        <h3>Datos del pasajero</h3>
+        <p id="selected-flight-summary" class="summary"></p>
+        <form id="reservation-form" novalidate>
+          <div class="field">
+            <label for="passenger-name">Nombre completo</label>
+            <input type="text" id="passenger-name" data-testid="passenger-name" placeholder="Ej. Juan Pérez" required autocomplete="name">
+          </div>
+          <div id="reservation-status" role="alert" hidden></div>
+          <div class="row">
+            <button type="submit" id="confirm-submit" data-testid="confirm-submit" class="btn btn-primary">Confirmar reserva</button>
+            <button type="button" id="cancel-selection" class="btn btn-ghost">Cambiar de vuelo</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="confirmation-section" class="confirm" hidden>
+        <div class="tick" aria-hidden="true">&#10003;</div>
+        <h3>¡Reserva confirmada!</h3>
+        <p id="confirmation-summary"></p>
+        <p style="margin-top:.7rem">Tu código de reserva:</p>
+        <div class="res-code" data-testid="confirmation-id" id="confirmation-id"></div>
+        <div class="row">
+          <button type="button" id="copy-code" class="btn btn-ghost btn-sm">Copiar código</button>
+          <button type="button" id="new-search" class="btn btn-primary btn-sm">Hacer otra reserva</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="lookup-title">
+      <h2 id="lookup-title">Consultar una reserva</h2>
+      <form id="lookup-form" class="inline" novalidate>
+        <div class="field">
+          <label for="lookup-id">Código de reserva</label>
+          <input type="text" id="lookup-id" data-testid="lookup-id" placeholder="Pega aquí tu código" autocomplete="off">
+        </div>
+        <button type="submit" id="lookup-submit" data-testid="lookup-submit" class="btn btn-ghost">Consultar</button>
+      </form>
+      <div id="lookup-status" role="status" aria-live="polite" hidden></div>
+      <dl id="lookup-result" class="details" data-testid="lookup-result" hidden></dl>
+    </section>
+  </main>
+
+  <script>
+    // Misma URL del servidor por defecto; en el puerto 3000 se asume el backend en el 8000.
+    const backendUrl = window.BACKEND_URL || (window.location.port === "3000" ? `${window.location.protocol}//${window.location.hostname}:8000` : "");
+    const $ = (id) => document.getElementById(id);
+    const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+    const flightRefs = new Map();   // flight_id -> { f, badge, btn }
+    let selected = null;
+    let busy = false;
+
+    function el(tag, cls, text) {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined) n.textContent = text;
+      return n;
+    }
+
+    function longDate(iso) {
+      const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
+      if (!y || !m || !d) return String(iso);
+      const text = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(y, m - 1, d));
+      return text.charAt(0).toUpperCase() + text.slice(1);   // "Viernes, 20 de noviembre de 2026"
+    }
+
+    function setStep(n) {
+      [1, 2, 3].forEach((i) => {
+        const s = $("step-" + i);
+        s.className = "step" + (i < n ? " done" : i === n ? " current" : "");
+        s.querySelector(".dot").textContent = i < n ? "✓" : String(i);
+      });
+    }
+
+    function show(id, kind, msg) {
+      const box = $(id);
+      if (!kind) { box.hidden = true; box.textContent = ""; box.className = ""; return; }
+      box.className = "alert " + kind;
+      box.textContent = msg;
+      box.hidden = false;
+    }
+
+    function setBusy(btn, on, text) {
+      if (on) {
+        btn.dataset.html = btn.innerHTML;
+        btn.disabled = true;
+        btn.setAttribute("aria-busy", "true");
+        btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>' + text;
+      } else {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+        if (btn.dataset.html !== undefined) { btn.innerHTML = btn.dataset.html; delete btn.dataset.html; }
+      }
+    }
+
+    function networkMessage(err) {
+      return err instanceof TypeError ? "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo." : err.message;
+    }
+
+    function renderBadge(badge, seats) {
+      badge.className = "badge " + (seats <= 0 ? "out" : seats <= 5 ? "warn" : "ok");
+      badge.textContent = seats <= 0 ? "Agotado" : seats === 1 ? "Queda 1 asiento" : seats <= 5 ? `Quedan ${seats} asientos` : `${seats} asientos libres`;
+    }
+
+    function renderFlights(flights) {
+      const list = $("flights-container");
+      list.replaceChildren();
+      flightRefs.clear();
+      flights.forEach((f) => {
+        const [from, to] = String(f.route).split("-");
+        const row = el("article", "flight");
+        row.setAttribute("data-testid", "flight-row");
+
+        const info = el("div");
+        const route = el("div", "route");
+        route.append(el("span", "", from), el("span", "to", "→"), el("span", "", to || ""));
+        const sub = el("div", "sub");
+        sub.append(longDate(f.flight_date), " · ", el("span", "id", "Vuelo " + f.flight_id));
+        info.append(route, sub);
+
+        const badge = el("span");
+        renderBadge(badge, f.seats_available);
+
+        const buy = el("div", "buy");
+        const price = el("div", "price", money.format(f.price_cents / 100));
+        price.append(" ", el("small", "", "por pasajero"));
+        const btn = el("button", "btn btn-primary btn-sm", "Reservar");
+        btn.type = "button";
+        btn.setAttribute("data-testid", "reserve-button");
+        btn.disabled = f.seats_available <= 0;
+        btn.addEventListener("click", () => selectFlight(f, row));
+        buy.append(price, btn);
+
+        row.append(info, badge, buy);
+        list.append(row);
+        flightRefs.set(f.flight_id, { f, badge, btn, row });
+      });
+      $("results-title").textContent = flights.length === 1 ? "1 vuelo disponible" : `${flights.length} vuelos disponibles`;
+      $("results").hidden = false;
+    }
+
+    async function searchFlights() {
+      if (busy) return;
+      const origin = $("search-origin").value.trim().toUpperCase();
+      const destination = $("search-destination").value.trim().toUpperCase();
+      const date = $("search-date").value.trim();
+
+      selected = null;
+      $("results").hidden = true;
+      $("reservation-section").hidden = true;
+      $("confirmation-section").hidden = true;
+      show("search-status", null);
+      setStep(1);
+
+      if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination)) {
+        return show("search-status", "error", "Escribe el origen y el destino con 3 letras, por ejemplo BOG y MDE.");
+      }
+      if (origin === destination) return show("search-status", "error", "El origen y el destino deben ser distintos.");
+      if (!date) return show("search-status", "error", "Elige la fecha del vuelo.");
+
+      const btn = $("search-submit");
+      busy = true; setBusy(btn, true, "Buscando…");
+      try {
+        const resp = await fetch(`${backendUrl}/flights/search?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&date=${encodeURIComponent(date)}`);
+        if (!resp.ok) throw new Error(`No se pudo completar la búsqueda (error ${resp.status}).`);
+        const flights = await resp.json();
+        if (!flights || flights.length === 0) {
+          return show("search-status", "info", "No hay vuelos disponibles para esa ruta y fecha. Prueba con otro día.");
+        }
+        renderFlights(flights);
+      } catch (err) {
+        show("search-status", "error", networkMessage(err));
+      } finally {
+        busy = false; setBusy(btn, false);
+      }
+    }
+
+    function selectFlight(f, row) {
+      selected = f;
+      flightRefs.forEach((r) => r.row.classList.remove("selected"));
+      row.classList.add("selected");
+      $("selected-flight-summary").textContent =
+        `${f.route.replace("-", " → ")} · ${longDate(f.flight_date)} · Vuelo ${f.flight_id} · ${money.format(f.price_cents / 100)}`;
+      show("reservation-status", null);
+      $("reservation-section").hidden = false;
+      setStep(2);
+      $("passenger-name").focus();
+      $("reservation-section").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    async function submitReservation() {
+      if (busy || !selected) return;
+      const name = $("passenger-name").value.trim();
+      if (name.length < 2) return show("reservation-status", "error", "Escribe el nombre completo del pasajero.");
+      show("reservation-status", null);
+
+      const btn = $("confirm-submit");
+      busy = true; setBusy(btn, true, "Reservando…");
+      try {
+        const resp = await fetch(`${backendUrl}/reservations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ flight_id: selected.flight_id, passenger_name: name, fare_class: "ECONOMY" })
+        });
+
+        if (resp.status === 409) {
+          // Otro pasajero se llevó el último asiento: refrescar la lista y avisar.
+          busy = false; setBusy(btn, false);
+          $("reservation-section").hidden = true;
+          await searchFlights();
+          return show("search-status", "error", "Ese vuelo se agotó mientras reservabas. Actualizamos los resultados.");
+        }
+        if (resp.status === 404) throw new Error("Ese vuelo ya no existe. Busca de nuevo.");
+        if (!resp.ok) throw new Error(`No pudimos completar la reserva (error ${resp.status}). Inténtalo de nuevo.`);
+
+        const data = await resp.json();
+        // El elemento confirmation-id contiene ÚNICAMENTE el reservation_id.
+        $("confirmation-id").textContent = data.reservation_id;
+        $("confirmation-summary").textContent =
+          `${data.passenger_name} · ${selected.route.replace("-", " → ")} · ${longDate(selected.flight_date)}`;
+        const ref = flightRefs.get(selected.flight_id);
+        if (ref) {
+          ref.f.seats_available = Math.max(0, ref.f.seats_available - 1);
+          renderBadge(ref.badge, ref.f.seats_available);
+          if (ref.f.seats_available === 0) ref.btn.disabled = true;
+        }
+        $("reservation-section").hidden = true;
+        $("confirmation-section").hidden = false;
+        setStep(3);
+        $("confirmation-section").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch (err) {
+        show("reservation-status", "error", networkMessage(err));
+      } finally {
+        if (busy) { busy = false; setBusy(btn, false); }
+      }
+    }
+
+    function copyCode() {
+      const text = $("confirmation-id").textContent;
+      const btn = $("copy-code");
+      const done = () => { btn.textContent = "¡Copiado!"; setTimeout(() => { btn.textContent = "Copiar código"; }, 1500); };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, () => {});
+        return;
+      }
+      const ta = document.createElement("textarea");   // respaldo para http sin contexto seguro
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { if (document.execCommand("copy")) done(); } catch (e) { /* sin portapapeles */ }
+      ta.remove();
+    }
+
+    function newSearch() {
+      $("confirmation-section").hidden = true;
+      $("results").hidden = true;
+      $("passenger-name").value = "";
+      selected = null;
+      setStep(1);
+      show("search-status", null);
+      $("search-origin").focus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function lookupReservation() {
+      const id = $("lookup-id").value.trim();
+      const result = $("lookup-result");
+      result.hidden = true; result.replaceChildren();
+      show("lookup-status", null);
+      if (!id) return show("lookup-status", "error", "Pega el código de tu reserva.");
+
+      const btn = $("lookup-submit");
+      setBusy(btn, true, "Consultando…");
+      try {
+        const resp = await fetch(`${backendUrl}/reservations/${encodeURIComponent(id)}`);
+        if (resp.status === 404) return show("lookup-status", "error", "No encontramos una reserva con ese código.");
+        if (!resp.ok) throw new Error(`No se pudo consultar la reserva (error ${resp.status}).`);
+        const r = await resp.json();
+        [["Pasajero", r.passenger_name], ["Vuelo", r.flight_id], ["Estado", r.status === "CONFIRMED" ? "Confirmada" : r.status]]
+          .forEach(([k, v]) => { result.append(el("dt", "", k), el("dd", "", v)); });
+        result.hidden = false;
+      } catch (err) {
+        show("lookup-status", "error", networkMessage(err));
+      } finally {
+        setBusy(btn, false);
+      }
+    }
+
+    $("search-form").addEventListener("submit", (e) => { e.preventDefault(); searchFlights(); });
+    $("reservation-form").addEventListener("submit", (e) => { e.preventDefault(); submitReservation(); });
+    $("lookup-form").addEventListener("submit", (e) => { e.preventDefault(); lookupReservation(); });
+    $("cancel-selection").addEventListener("click", () => {
+      $("reservation-section").hidden = true; selected = null;
+      flightRefs.forEach((r) => r.row.classList.remove("selected"));
+      setStep(1);
+    });
+    $("copy-code").addEventListener("click", copyCode);
+    $("new-search").addEventListener("click", newSearch);
+    $("swap").addEventListener("click", () => {
+      const o = $("search-origin"), d = $("search-destination");
+      [o.value, d.value] = [d.value, o.value];
+    });
+  </script>
+</body>
+</html>

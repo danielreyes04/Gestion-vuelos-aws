@@ -1,0 +1,21 @@
+# Configuración del harness. Sin credenciales: se usan las de ~/.aws o variables de entorno.
+team_id: "team01"
+seed: 764000
+
+# Actualizar la IP después de cada despliegue / reinicio del Learner Lab
+# (python deploy/deploy_ec2.py imprime estas dos líneas).
+backend:
+  base_url: "http://3.239.196.92:8000"
+frontend:
+  base_url: "http://3.239.196.92:8000"   # el mismo FastAPI sirve "/" y "/manager"
+
+aws:
+  region: us-east-1
+  athena_workgroup: primary
+  athena_database: vuelos_db
+  athena_output: "s3://s3vuelosparcial/results/"
+  tables:
+    detail: reservations_curated
+    metrics: route_month_metrics
+
+cost_projection_file: cost_projection.yaml   # relativo a esta carpeta (parcial2-harness/)
