@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     ATHENA_S3_OUTPUT: str = "s3://s3vuelosparcial/results/"
     ATHENA_WORKGROUP: str = "primary"
 
+    # Kinesis (Parcial 3). EVENTS_ENABLED=false desactiva publicador y vista en vivo
+    # (útil para correr local sin AWS).
+    KINESIS_STREAM_NAME: str = "airline-events"
+    EVENTS_ENABLED: bool = True
+
     model_config = SettingsConfigDict(
         env_file=[
             str(_BACKEND_DIR / ".env"),

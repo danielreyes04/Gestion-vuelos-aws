@@ -225,3 +225,76 @@ class RealAWS:
             except Exception:
                 unknown.append(name)
         return {"counts": out, "unknown": unknown}
+
+    # ------------------------------------------------------------------ Kinesis (Parcial 3)
+    def kinesis_summary(self, stream):
+        """{'mode','open_shards','retention_hours','consumers'} or None if the stream does not exist."""
+        k = self._c("kinesis")
+        try:
+            s = k.describe_stream_summary(StreamName=stream)["StreamDescriptionSummary"]
+        except k.exceptions.ResourceNotFoundException:
+            return None
+        n_cons = 0
+        try:
+            n_cons = len(k.list_stream_consumers(StreamARN=s["StreamARN"])["Consumers"])
+        except Exception:
+            pass
+        return {"mode": s.get("StreamModeDetails", {}).get("StreamMode", "PROVISIONED"),
+                "open_shards": int(s["OpenShardCount"]), "retention_hours": int(s["RetentionPeriodHours"]),
+                "consumers": n_cons}
+
+    def kinesis_put(self, stream, records):
+        """records: list of (partition_key, bytes). Retries throttled records."""
+        k = self._c("kinesis")
+        pending = list(records)
+        for attempt in range(12):
+            nxt = []
+            for i in range(0, len(pending), 500):
+                chunk = pending[i:i + 500]
+                r = k.put_records(StreamName=stream, Records=[{"Data": d, "PartitionKey": pk} for pk, d in chunk])
+                if r["FailedRecordCount"]:
+                    nxt += [chunk[j] for j, x in enumerate(r["Records"]) if "ErrorCode" in x]
+            if not nxt:
+                return
+            pending = nxt
+            time.sleep(1 + attempt)
+        raise RuntimeError(f"{len(pending)} records could not be put into the stream")
+
+    def kinesis_read_since(self, stream, since, max_seconds=120):
+        """Decoded records (dict with partition_key, data(bytes), arrival) arrived at or after `since`."""
+        import json as _json
+        k = self._c("kinesis")
+        out, t0 = [], time.time()
+        for sh in k.list_shards(StreamName=stream)["Shards"]:
+            it = k.get_shard_iterator(StreamName=stream, ShardId=sh["ShardId"], ShardIteratorType="AT_TIMESTAMP",
+                                      Timestamp=since)["ShardIterator"]
+            while it and time.time() - t0 < max_seconds:
+                r = k.get_records(ShardIterator=it, Limit=1000)
+                for rec in r["Records"]:
+                    out.append({"partition_key": rec["PartitionKey"], "data": rec["Data"],
+                                "arrival": _utc(rec["ApproximateArrivalTimestamp"])})
+                if r.get("MillisBehindLatest", 0) == 0 and not r["Records"]:
+                    break
+                it = r.get("NextShardIterator")
+                time.sleep(0.25)
+        return out
+
+    def s3_read_text_since(self, uri, since):
+        """[(key, text)] for objects under uri modified at or after `since` (gzip is transparently decoded)."""
+        import gzip
+        bucket, _ = split_s3(uri)
+        s3 = self._c("s3")
+        out = []
+        for o in self.s3_list(uri):
+            if o["last_modified"] < since:
+                continue
+            body = s3.get_object(Bucket=bucket, Key=o["key"])["Body"].read()
+            if body[:2] == b"\x1f\x8b":
+                body = gzip.decompress(body)
+            out.append((o["key"], body.decode("utf-8", errors="replace")))
+        return out
+
+    def athena_workgroup(self, workgroup):
+        """{'bytes_cutoff': int or None}"""
+        wg = self._c("athena").get_work_group(WorkGroup=workgroup)["WorkGroup"]
+        return {"bytes_cutoff": wg.get("Configuration", {}).get("BytesScannedCutoffPerQuery")}

@@ -20,3 +20,5 @@ emr_per_normalized_instance_hour: 0.03     # EC2 + EMR surcharge, approximated f
 athena_per_tb_scanned: 5.0
 s3_per_gb_month: 0.023
 default_unknown_instance_per_hour: 0.10
+# Parcial 3 additions (also ILLUSTRATIVE, not verified)
+kinesis_shard_per_hour: 0.015

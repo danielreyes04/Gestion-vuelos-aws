@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -10,8 +11,22 @@ from adapters.inbound.api.exception_handlers import register_exception_handlers
 from adapters.inbound.api.routes.reservas_router import router as reservas_router
 from adapters.inbound.api.routes.vuelos_router import router as vuelos_router
 from adapters.inbound.api.routes.harness_router import router as harness_router
+from infrastructure.events import publisher
+from infrastructure.live_view import live_view
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Parcial 3: publicador de eventos + consumidor de la vista en vivo.
+    # La vista en vivo guarda estado en memoria: correr con UN solo worker de uvicorn.
+    publisher.start()
+    live_view.start()
+    yield
+    live_view.stop()
+    publisher.stop()
+
 
 app = FastAPI(
+    lifespan=lifespan,
     title="Gestión de Vuelos API",
     description=(
         "Backend del sistema de reservas de aerolínea regional. "

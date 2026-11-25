@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
 
 from infrastructure.config import settings
+from infrastructure.live_view import live_view
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -37,6 +38,23 @@ class OccupancyOut(BaseModel):
     seats_capacity: int
     seats_sold:     int
     occupancy:      float
+
+
+class LiveOut(BaseModel):
+    window_minutes: int
+    searches:       int
+    reservations:   int
+    cancellations:  int
+    conversion:     float
+
+
+@router.get("/live", response_model=LiveOut, status_code=status.HTTP_200_OK)
+def get_live(window: int = Query(5, ge=1, le=60, description="Ventana en minutos (por event_ts)")):
+    """
+    Parcial 3 (R3): contadores de los últimos `window` minutos, alimentados por el
+    consumidor de Kinesis (infrastructure/live_view.py). No consulta Athena.
+    """
+    return live_view.snapshot(window)
 
 
 @router.get(

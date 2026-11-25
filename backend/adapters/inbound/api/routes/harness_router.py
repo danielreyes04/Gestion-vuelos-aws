@@ -12,13 +12,18 @@ Rutas:
 """
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import text, update
 from sqlalchemy.orm import Session
 
 from adapters.inbound.api.routes.analytics_router import router as analytics_router
 from infrastructure.database import get_db
+from infrastructure.events import (
+    build_reservation_event,
+    build_search_event,
+    publisher,
+)
 from infrastructure.models.flight import FlightModel
 from infrastructure.models.reservation import ReservationModel
 
@@ -109,10 +114,13 @@ def search_flights(
     origin:      str,
     destination: str,
     date:        str,
+    x_session_id: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
     # route se almacena como "ORIGIN-DESTINATION" en mayúsculas
-    route = f"{origin.upper().strip()}-{destination.upper().strip()}"
+    origin_c = origin.upper().strip()
+    destination_c = destination.upper().strip()
+    route = f"{origin_c}-{destination_c}"
     flights = (
         db.query(FlightModel)
         .filter(
@@ -122,11 +130,21 @@ def search_flights(
         )
         .all()
     )
+
+    # Parcial 3 (R1/R2): un evento por búsqueda, encolado sin bloquear la respuesta.
+    pk, event = build_search_event(
+        session_id=(x_session_id or "").strip() or str(uuid.uuid4()),
+        origin=origin_c,
+        destination=destination_c,
+        travel_date=date,
+        results_count=len(flights),
+    )
+    publisher.publish(pk, event)
     return flights
 
 
 # ------------------------------------------------------------------ #
-# POST /reservations                                                   #
+# POST /reservations                                                 #
 # R2: no overselling — optimistic locking con UPDATE atómico.         #
 # 201 si logró reservar, 409 si no hay seats, 404 si el vuelo         #
 # no existe.                                                          #
@@ -146,6 +164,9 @@ def create_reservation(body: ReservationIn, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Flight {body.flight_id} not found.",
         )
+
+    # Datos del vuelo para el evento (se leen antes del commit, que expira el objeto)
+    f_route, f_date, f_price = flight.route, flight.flight_date, flight.price_cents
 
     # 2. Optimistic locking: UPDATE atómico que solo procede si
     #    seats_available > 0. Si rowcount == 0 → otro request se adelantó → 409.
@@ -180,6 +201,14 @@ def create_reservation(body: ReservationIn, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(reservation)
 
+    # Parcial 3 (R1): el evento se publica DESPUÉS de guardar la reserva.
+    # Sin datos personales (no se incluye passenger_name).
+    pk, event = build_reservation_event(
+        "reservation_created", str(reservation.reservation_id), reservation.flight_id,
+        f_route, f_date, reservation.fare_class, f_price,
+    )
+    publisher.publish(pk, event)
+
     return ReservationOut(
         reservation_id=str(reservation.reservation_id),
         flight_id=reservation.flight_id,
@@ -189,7 +218,75 @@ def create_reservation(body: ReservationIn, db: Session = Depends(get_db)):
 
 
 # ------------------------------------------------------------------ #
-# GET /reservations/{id}                                              #
+# POST /reservations/{id}/cancel                                       #
+# Parcial 3: 200 CANCELLED, 404 desconocida, 409 ya cancelada.        #
+# Libera el asiento y publica reservation_cancelled.                  #
+# ------------------------------------------------------------------ #
+
+@router.post(
+    "/reservations/{reservation_id}/cancel",
+    response_model=ReservationOut,
+    status_code=status.HTTP_200_OK,
+)
+def cancel_reservation(reservation_id: str, db: Session = Depends(get_db)):
+    try:
+        rid = uuid.UUID(reservation_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid reservation id format.")
+
+    reservation = db.get(ReservationModel, rid)
+    if reservation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Reservation {reservation_id} not found.",
+        )
+
+    flight_id = reservation.flight_id
+    passenger_name = reservation.passenger_name
+    fare_class = reservation.fare_class
+
+    # UPDATE atómico: solo cancela si sigue CONFIRMED. Dos cancelaciones
+    # simultáneas -> exactamente una gana, la otra recibe 409.
+    result = db.execute(
+        update(ReservationModel)
+        .where(
+            ReservationModel.reservation_id == rid,
+            ReservationModel.status == "CONFIRMED",
+        )
+        .values(status="CANCELLED")
+    )
+    if result.rowcount == 0:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Reservation is already cancelled.",
+        )
+
+    # Libera el asiento
+    db.execute(
+        update(FlightModel)
+        .where(FlightModel.flight_id == flight_id)
+        .values(seats_available=FlightModel.seats_available + 1)
+    )
+    flight = db.get(FlightModel, flight_id)
+    f_route, f_date, f_price = flight.route, flight.flight_date, flight.price_cents
+    db.commit()
+
+    pk, event = build_reservation_event(
+        "reservation_cancelled", str(rid), flight_id, f_route, f_date, fare_class, f_price,
+    )
+    publisher.publish(pk, event)
+
+    return ReservationOut(
+        reservation_id=str(rid),
+        flight_id=flight_id,
+        status="CANCELLED",
+        passenger_name=passenger_name,
+    )
+
+
+# ------------------------------------------------------------------ #
+# GET /reservations/{id}                                           #
 # R3: 200 con la reserva o 404 si no existe.                         #
 # ------------------------------------------------------------------ #
 
